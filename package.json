@@ -1,0 +1,17 @@
+{
+  "name": "penguindive",
+  "version": "1.0.0",
+  "description": "Tutorial for enchant.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "enchant": "^0.2.0"
+  },
+  "devDependencies": {
+    "express": "^4.14.0"
+  }
+}
