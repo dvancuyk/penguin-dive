@@ -3,7 +3,9 @@ var penguindive = {
   resources: {
     wallpaper: 'res/BG.png',
     penguin: 'res/penguinSheet.png',
-    ice: 'res/Ice.png'
+    ice: 'res/Ice.png',
+    hitSound: 'res/Hit.mp3',
+    backgroundMusic: 'res/bgm.mp3'
   },
   convertToSeconds: function(time){
     return time * 0.001;
@@ -37,10 +39,8 @@ var SceneGame = Class.create(Scene, {
     this.addEventListener(Event.TOUCH_START, this.handleTouchControl);
     this.addEventListener(Event.ENTER_FRAME, this.update);
 
-    var game = Game.instance,
-      label = new Label('Hi, Ocean (take 2)!'),
-      bg = new Sprite(320, 440);
-
+    var game = Game.instance;
+    var bg = new Sprite(320, 440);
     bg.image = game.assets[penguindive.resources.wallpaper];
     var penguin = new Penguin();
     penguin.x = game.width/2 - penguin.width/2;
@@ -50,9 +50,23 @@ var SceneGame = Class.create(Scene, {
 
     this.addChild(bg);
     this.addChild(this.iceTray);
+
+    var label = new Label();
+    label.x = 9;
+    label.y = 32;
+    label.color = 'white';
+    label.font = '16px strong';
+    label.textAlign = 'center';
+    label._style.textShadow = '-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black';
+    this.scoreLabel = label;
     this.addChild(label);
     this.addChild(penguin);
     this.generateIceTimer = 0;
+    this.scoreTimer = 0;
+    this.score = 0;
+    this.setScore(0);
+    this.backgroundMusic = game.assets[penguindive.resources.backgroundMusic];
+    this.backgroundMusic.play();
   },
   handleTouchControl: function(e){
     var laneWidth = 320/3;
@@ -60,8 +74,13 @@ var SceneGame = Class.create(Scene, {
     lane = Math.max(Math.min(2, lane), 0);
     this.penguin.switchToLaneNumber(lane);
   },
+  setScore: function(value) {
+    this.score = value;
+    this.scoreLabel.text = 'SCORE<br />' + value;
+  },
   update: function(e){
-    this.generateIceTimer += penguindive.convertToSeconds(e.elapsed);
+    var second = penguindive.convertToSeconds(e.elapsed);
+    this.generateIceTimer += second;
     if(this.generateIceTimer >= 0.5){
       this.generateIceTimer -= 0.5;
       var ice = new Ice(Math.floor(Math.random()*3));
@@ -71,9 +90,52 @@ var SceneGame = Class.create(Scene, {
       var ice = this.iceTray.childNodes[i];
       if(ice.intersect(this.penguin)){
         this.iceTray.removeChild(ice);
+        Game.instance.assets[penguindive.resources.hitSound].play();
+
+        this.backgroundMusic.stop();
+        Game.instance.replaceScene(new SceneGameOver(this.score));
         break;
       }
     }
+
+    this.scoreTimer += second;
+    if(this.scoreTimer >= 0.5){
+      this.setScore(this.score + 1);
+      this.scoreTimer -= 0.5;
+    }
+
+    if(this.backgroundMusic.currentTime >= this.backgroundMusic.duration){
+      this.backgroundMusic.play();
+    }
+  }
+});
+
+var SceneGameOver = Class.create(Scene, {
+  initialize: function(score){
+    Scene.apply(this);
+    this.backgroundColor = 'black';
+    var gameOverLabel = new Label("GAME OVER<br /><br />Tap to Restart");
+    gameOverLabel.x = 8;
+    gameOverLabel.y = 128;
+    gameOverLabel.color = 'white';
+    gameOverLabel.font = '32px strong';
+    gameOverLabel.textAlign = 'center';
+
+    var scoreLabel = new Label('SCORE<br>' + score);
+    scoreLabel.x = 9;
+    scoreLabel.y = 32;
+    scoreLabel.color = 'white';
+    scoreLabel.font = '16px strong';
+    scoreLabel.textAlign = 'center';
+
+    this.addChild(gameOverLabel);
+    this.addChild(scoreLabel);
+
+    this.addEventListener(Event.TOUCH_START, this.restart);
+  },
+  restart: function(e){
+    var game = Game.instance;
+    game.replaceScene(new SceneGame());
   }
 });
 
